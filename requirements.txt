@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+flask
+sqlalchemy
+pymysql
+cryptography
+pydantic
+pydantic-settings
+python-dotenv
+a2wsgi
+jinja2
+python-multipart
