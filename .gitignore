@@ -1,0 +1,9 @@
+.env
+.vscode
+.venv
+.__pychache__
+.requirements.txt
+.ecom_store.sql
+.run.__pychache__
+.run.py
+.seed.py

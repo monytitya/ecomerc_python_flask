@@ -1,77 +1,68 @@
+import pymysql
 from sqlalchemy import create_engine, text
-from app.db.session import SessionLocal, engine, SQLALCHEMY_DATABASE_URL
-from app.models import models
+from app.db.session import SQLALCHEMY_DATABASE_URL
 import os
 
-def create_db_if_not_exists():
-    # Parse the URL to get the server address without the DB name
-    # e.g. mysql+pymysql://root@localhost:3306/ecom_store -> mysql+pymysql://root@localhost:3306
+def run_sql_file(filename):
+    # Parse the URL to get connection details
+    # e.g. mysql+pymysql://root:pass@localhost:3306/ecom_store
+    
+    # 1. Create database if not exists
     url_parts = SQLALCHEMY_DATABASE_URL.rsplit('/', 1)
     base_url = url_parts[0]
     db_name = url_parts[1]
     
-    # Connect to MySQL server without database
-    temp_engine = create_engine(base_url)
-    with temp_engine.connect() as conn:
-        conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(f"CREATE DATABASE IF NOT EXISTS {db_name}"))
-        print(f"Database '{db_name}' checked/created.")
-    temp_engine.dispose()
-
-def seed_data():
-    db = SessionLocal()
-    
-    # Check if we already have data
-    if db.query(models.Category).first():
-        print("Database already has data. Skipping seed.")
-        db.close()
-        return
-
-    # Categories
-    cats = [
-        models.Category(cat_id=2, cat_title="Feminine", cat_top="no", cat_image="feminelg.png"),
-        models.Category(cat_id=3, cat_title="Kids", cat_top="no", cat_image="kidslg.jpg"),
-        models.Category(cat_id=4, cat_title="Others", cat_top="yes", cat_image="othericon.png"),
-        models.Category(cat_id=5, cat_title="Men", cat_top="yes", cat_image="malelg.png"),
-    ]
-    
-    # Products
-    prods = [
-        models.Product(
-            product_id=5, 
-            cat_id=5, 
-            product_title="Denim Borg Lined Western Jacket", 
-            product_url="product-url-5", 
-            product_price=100,
-            status="product"
-        ),
-        models.Product(
-            product_id=8, 
-            cat_id=2, 
-            product_title="Sleeveless Flaux Fur Hybrid Coat", 
-            product_url="product-url-8", 
-            product_price=100,
-            status="product"
-        )
-    ]
-
     try:
-        db.add_all(cats)
-        db.commit()
-        db.add_all(prods)
-        db.commit()
-        print("Database seeded successfully!")
+        temp_engine = create_engine(base_url)
+        with temp_engine.connect() as conn:
+            conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(f"CREATE DATABASE IF NOT EXISTS {db_name}"))
+            print(f"Database '{db_name}' checked/created.")
+        temp_engine.dispose()
     except Exception as e:
-        print(f"Error seeding database: {e}")
-        db.rollback()
-    finally:
-        db.close()
+        print(f"Failed to connect to MySQL server: {e}")
+        return False
+
+    # 2. Execute SQL file
+    try:
+        engine = create_engine(SQLALCHEMY_DATABASE_URL)
+        with engine.connect() as conn:
+            with open(filename, 'r', encoding='utf-8') as f:
+                # Split by semicolon, but be careful with triggers/procedures
+                # For this specific SQL, simple split is okay
+                sql_content = f.read()
+                
+                # Remove comments
+                commands = []
+                current_command = []
+                for line in sql_content.split('\n'):
+                    if line.strip().startswith('--') or line.strip().startswith('/*'):
+                        continue
+                    if not line.strip():
+                        continue
+                    current_command.append(line)
+                    if line.strip().endswith(';'):
+                        commands.append(' '.join(current_command))
+                        current_command = []
+                
+                print(f"Executing {len(commands)} commands from {filename}...")
+                for cmd in commands:
+                    try:
+                        conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(cmd))
+                    except Exception as ex:
+                        # Ignore "already exists" errors or similar if needed
+                        if "already exists" not in str(ex).lower():
+                            print(f"Warning on command: {str(ex)[:100]}...")
+            
+            print("SQL file executed successfully!")
+        engine.dispose()
+        return True
+    except Exception as e:
+        print(f"Error executing SQL file: {e}")
+        return False
 
 if __name__ == "__main__":
-    try:
-        create_db_if_not_exists()
-        # Create tables
-        models.Base.metadata.create_all(bind=engine)
-        seed_data()
-    except Exception as e:
-        print(f"Setup failed: {e}")
-        print("\nTIP: Ensure your MySQL password in .env is correct.")
+    sql_file = "ecom_store.sql"
+    if os.path.exists(sql_file):
+        run_sql_file(sql_file)
+    else:
+        print(f"Error: {sql_file} not found.")
