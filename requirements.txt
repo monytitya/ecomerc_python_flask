@@ -10,3 +10,4 @@ python-dotenv
 a2wsgi
 jinja2
 python-multipart
+bakong-khqr

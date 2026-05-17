@@ -81,7 +81,7 @@ class CustomerOrder(Base):
     __tablename__ = "customer_orders"
     order_id = Column(Integer, primary_key=True, autoincrement=True)
     customer_id = Column(Integer, nullable=False)
-    due_amount = Column(Integer, nullable=False)
+    due_amount = Column(Float, nullable=False)
     invoice_no = Column(Integer, nullable=False)
     qty = Column(Integer, nullable=False)
     size = Column(Text, nullable=False)
@@ -104,7 +104,7 @@ class Payment(Base):
     __tablename__ = "payments"
     payment_id = Column(Integer, primary_key=True, autoincrement=True)
     invoice_no = Column(Integer, nullable=False)
-    amount = Column(Integer, nullable=False)
+    amount = Column(Float, nullable=False)
     payment_mode = Column(Text, nullable=False)
     ref_no = Column(Integer, nullable=False)
     code = Column(Integer, nullable=False)
@@ -171,3 +171,24 @@ class Wishlist(Base):
     wishlist_id = Column(Integer, primary_key=True, autoincrement=True)
     customer_id = Column(Integer, nullable=False)
     product_id = Column(Integer, nullable=False)
+
+
+class BakongTransaction(Base):
+    """Tracks Bakong KHQR payment sessions linked to customer orders."""
+    __tablename__ = "bakong_transactions"
+    transaction_id = Column(Integer, primary_key=True, autoincrement=True)
+    order_id = Column(Integer, nullable=False)          # Links to customer_orders.order_id
+    customer_id = Column(Integer, nullable=False)
+    md5 = Column(String(64), nullable=False, unique=True, index=True)  # MD5 of QR string — used to poll status
+    qr_string = Column(Text, nullable=False)
+    deeplink = Column(Text, nullable=True)
+    currency = Column(String(10), nullable=False, default="USD")
+    amount = Column(Float, nullable=False)
+    payment_status = Column(String(50), nullable=False, default="PENDING")  # PENDING | PAID | EXPIRED
+    bakong_hash = Column(String(255), nullable=True)     # hash from Bakong response when paid
+    from_account = Column(String(255), nullable=True)    # payer account from Bakong
+    to_account = Column(String(255), nullable=True)      # merchant account from Bakong
+    acknowledged_at = Column(TIMESTAMP, nullable=True)   # when Bakong acknowledged
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+
