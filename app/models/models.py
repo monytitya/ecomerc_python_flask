@@ -106,7 +106,7 @@ class Payment(Base):
     invoice_no = Column(Integer, nullable=False)
     amount = Column(Float, nullable=False)
     payment_mode = Column(Text, nullable=False)
-    ref_no = Column(Integer, nullable=False)
+    ref_no = Column(String(255), nullable=False)
     code = Column(Integer, nullable=False)
     payment_date = Column(Text, nullable=False)
 

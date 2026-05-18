@@ -173,7 +173,7 @@ class PaymentBase(BaseModel):
     invoice_no: int
     amount: float
     payment_mode: str
-    ref_no: int
+    ref_no: str
     code: int
     payment_date: str
 
