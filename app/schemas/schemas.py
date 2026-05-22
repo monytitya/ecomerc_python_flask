@@ -374,3 +374,20 @@ class BakongCheckPaymentRequest(BaseModel):
     """Request body for checking payment status by MD5."""
     md5: str
 
+
+# ==================== Payment QR Code (Generate & Decode) ====================
+
+class PaymentQRRequest(BaseModel):
+    """Request body for generating a Payment QR code image."""
+    invoice_no: int
+    amount: float
+    payment_mode: str
+    ref_no: str
+    code: int
+    payment_date: str
+    payment_id: Optional[int] = None
+
+class QRDecodeRequest(BaseModel):
+    """Raw string decoded from a QR scan (JSON string)."""
+    qr_data: str
+

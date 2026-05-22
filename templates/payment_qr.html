@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment QR — Generate & Scan</title>
+    <meta name="description" content="Generate and decode payment QR codes for Ecomerc e-commerce platform">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ── Reset & Base ────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.65);
+            --bg-card-hover: rgba(17, 24, 39, 0.85);
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-glow: rgba(99, 102, 241, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-start: #6366f1;
+            --accent-end: #a855f7;
+            --accent-cyan: #22d3ee;
+            --success: #34d399;
+            --success-bg: rgba(52, 211, 153, 0.1);
+            --error: #f87171;
+            --error-bg: rgba(248, 113, 113, 0.1);
+            --warning: #fbbf24;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --radius-xs: 6px;
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Animated Background ──────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 20% 20%, rgba(99, 102, 241, 0.08), transparent),
+                radial-gradient(ellipse 500px 500px at 80% 80%, rgba(168, 85, 247, 0.06), transparent),
+                radial-gradient(ellipse 300px 300px at 50% 50%, rgba(34, 211, 238, 0.04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Top Navigation Bar ───────────────────────────── */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px) saturate(1.5);
+            background: rgba(10, 14, 26, 0.75);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 2rem;
+        }
+        .top-bar-inner {
+            max-width: 1360px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: -0.02em;
+        }
+        .logo-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 6px;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--success);
+            background: var(--success-bg);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(52, 211, 153, 0.2);
+        }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* ── Page Hero ────────────────────────────────────── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 3.5rem 1.5rem 2rem;
+        }
+        .hero h1 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-cyan) 50%, var(--accent-end) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.6rem;
+        }
+        .hero p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ── Main Grid ────────────────────────────────────── */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem 4rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 860px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        /* ── Glass Card ───────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(24px) saturate(1.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-card);
+            padding: 2rem;
+            transition: var(--transition);
+            animation: card-in 0.6s ease-out both;
+        }
+        .card:nth-child(2) { animation-delay: 0.12s; }
+        @keyframes card-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-card), var(--shadow-glow);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .card-icon.generate {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+            border: 1px solid rgba(99, 102, 241, 0.25);
+        }
+        .card-icon.scan {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(52, 211, 153, 0.2));
+            border: 1px solid rgba(34, 211, 238, 0.25);
+        }
+        .card-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        .card-header small {
+            display: block;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        /* ── Form Elements ────────────────────────────────── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.85rem;
+        }
+        .form-grid .full-width { grid-column: 1 / -1; }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+        .field label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .field input, .field select, .field textarea {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xs);
+            padding: 10px 13px;
+            font-size: 0.88rem;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            transition: var(--transition);
+            outline: none;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus {
+            border-color: var(--accent-start);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        .field input::placeholder, .field textarea::placeholder {
+            color: var(--text-muted);
+        }
+        .field textarea {
+            resize: vertical;
+            min-height: 110px;
+            font-family: 'Menlo', 'Consolas', monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+        .field select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+        .field select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* ── Buttons ──────────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(255,255,255,0.1), transparent);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        .btn:hover::after { opacity: 1; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
+        }
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, #06b6d4, #22d3ee);
+            color: #0a0e1a;
+            box-shadow: 0 4px 16px rgba(34, 211, 238, 0.25);
+        }
+        .btn-cyan:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(34, 211, 238, 0.35);
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 1.2rem;
+        }
+
+        .btn .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        .btn.loading .spinner { display: block; }
+        .btn.loading .btn-text { opacity: 0.6; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── QR Result Area ───────────────────────────────── */
+        .qr-result {
+            margin-top: 1.5rem;
+            animation: fade-up 0.4s ease-out;
+        }
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .qr-image-wrap {
+            display: flex;
+            justify-content: center;
+            padding: 1.5rem;
+            background: #fff;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1rem;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
+        }
+        .qr-image-wrap img {
+            width: 220px;
+            height: 220px;
+            image-rendering: pixelated;
+        }
+
+        /* ── JSON Output ──────────────────────────────────── */
+        .json-output {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xs);
+            padding: 1rem 1.2rem;
+            font-family: 'Menlo', 'Consolas', monospace;
+            font-size: 0.78rem;
+            line-height: 1.6;
+            color: var(--accent-cyan);
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .json-output::-webkit-scrollbar { width: 5px; }
+        .json-output::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.12);
+            border-radius: 4px;
+        }
+
+        /* ── Decode Result Cards ──────────────────────────── */
+        .decode-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            margin-top: 1rem;
+        }
+        .decode-field {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xs);
+            padding: 10px 14px;
+            transition: var(--transition);
+        }
+        .decode-field:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(34, 211, 238, 0.2);
+        }
+        .decode-field .df-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+        .decode-field .df-value {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* ── Status Badge ─────────────────────────────────── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+        }
+        .badge-error {
+            background: var(--error-bg);
+            color: var(--error);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+
+        /* ── Alert ────────────────────────────────────────── */
+        .alert {
+            padding: 0.85rem 1rem;
+            border-radius: var(--radius-xs);
+            font-size: 0.84rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fade-up 0.3s ease-out;
+        }
+        .alert-error {
+            background: var(--error-bg);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            color: var(--error);
+        }
+
+        /* ── Divider ──────────────────────────────────────── */
+        .divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 1.2rem 0;
+        }
+
+        /* ── Footer ───────────────────────────────────────── */
+        .footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 2rem 1.5rem 3rem;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+        .footer a {
+            color: var(--accent-start);
+            text-decoration: none;
+        }
+        .footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <!-- ── Top Bar ────────────────────────────────────────── -->
+    <nav class="top-bar">
+        <div class="top-bar-inner">
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <span>Ecomerc QR</span>
+            </div>
+            <div class="nav-links">
+                <a href="/docs">API Docs</a>
+                <a href="/payment/demo" class="active">QR Demo</a>
+                <a href="/health">Health</a>
+            </div>
+            <div class="status-pill">
+                <span class="status-dot"></span>
+                API Online
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── Hero ───────────────────────────────────────────── -->
+    <section class="hero">
+        <h1>Payment QR Code</h1>
+        <p>Generate payment QR codes instantly and decode scanned QR data back into structured payment fields.</p>
+    </section>
+
+    <!-- ── Main Grid ──────────────────────────────────────── -->
+    <main class="container">
+
+        <!-- ═══ Card 1: Generate QR ═══════════════════════ -->
+        <div class="card" id="generate-card">
+            <div class="card-header">
+                <div class="card-icon generate">📤</div>
+                <div>
+                    <h2>Generate QR</h2>
+                    <small>POST /payment/generate-qr</small>
+                </div>
+            </div>
+
+            <form id="generate-form" class="form-grid" autocomplete="off">
+                <div class="field">
+                    <label for="invoice_no">Invoice No</label>
+                    <input type="number" id="invoice_no" name="invoice_no" placeholder="10045" value="10045" required>
+                </div>
+                <div class="field">
+                    <label for="amount">Amount ($)</label>
+                    <input type="number" id="amount" name="amount" step="0.01" placeholder="49.99" value="49.99" required>
+                </div>
+                <div class="field">
+                    <label for="payment_mode">Payment Mode</label>
+                    <select id="payment_mode" name="payment_mode">
+                        <option value="QR">QR Code</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="code">Code</label>
+                    <input type="number" id="code" name="code" placeholder="855" value="855" required>
+                </div>
+                <div class="field">
+                    <label for="ref_no">Reference No</label>
+                    <input type="text" id="ref_no" name="ref_no" placeholder="REF-2026-001" value="REF-2026-001" required>
+                </div>
+                <div class="field">
+                    <label for="payment_date">Payment Date</label>
+                    <input type="date" id="payment_date" name="payment_date" required>
+                </div>
+
+                <div class="btn-row full-width">
+                    <button type="submit" class="btn btn-primary" id="btn-generate">
+                        <span class="spinner"></span>
+                        <span class="btn-text">Generate QR</span>
+                    </button>
+                    <button type="button" class="btn btn-ghost" onclick="resetGenerateForm()">Clear</button>
+                </div>
+            </form>
+
+            <!-- QR Result -->
+            <div id="qr-result" style="display:none;">
+                <div class="divider"></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.8rem;">
+                    <span class="badge badge-success">✓ QR Generated</span>
+                    <button class="btn btn-ghost" style="padding:6px 12px; font-size:0.75rem;" onclick="downloadQR()">⬇ Download</button>
+                </div>
+                <div class="qr-image-wrap">
+                    <img id="qr-img" src="" alt="Payment QR Code">
+                </div>
+                <div class="json-output" id="qr-payload"></div>
+            </div>
+
+            <div id="generate-error" style="display:none;"></div>
+        </div>
+
+        <!-- ═══ Card 2: Scan / Decode QR ══════════════════ -->
+        <div class="card" id="scan-card">
+            <div class="card-header">
+                <div class="card-icon scan">📥</div>
+                <div>
+                    <h2>Decode QR</h2>
+                    <small>POST /payment/decode-qr</small>
+                </div>
+            </div>
+
+            <form id="decode-form" autocomplete="off">
+                <div class="field">
+                    <label for="qr_data">Scanned QR Data (JSON)</label>
+                    <textarea id="qr_data" name="qr_data"
+                        placeholder='{"invoice_no": 10045, "amount": 49.99, "payment_mode": "QR", "ref_no": "REF-2026-001", "code": 855, "payment_date": "2026-05-22"}'
+                    ></textarea>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn btn-cyan" id="btn-decode">
+                        <span class="spinner"></span>
+                        <span class="btn-text">Decode QR Data</span>
+                    </button>
+                    <button type="button" class="btn btn-ghost" onclick="pasteFromGenerate()">📋 Paste Last QR</button>
+                    <button type="button" class="btn btn-ghost" onclick="resetDecodeForm()">Clear</button>
+                </div>
+            </form>
+
+            <!-- Decoded Result -->
+            <div id="decode-result" style="display:none;">
+                <div class="divider"></div>
+                <div style="margin-bottom:0.8rem;">
+                    <span class="badge badge-success" id="decode-badge">✓ Decoded Successfully</span>
+                </div>
+                <div class="decode-fields" id="decode-fields"></div>
+            </div>
+
+            <div id="decode-error" style="display:none;"></div>
+        </div>
+
+    </main>
+
+    <!-- ── Footer ─────────────────────────────────────────── -->
+    <footer class="footer">
+        Ecomerc API &middot; Payment QR v1.0 &middot;
+        <a href="/docs">Swagger Docs</a> &middot;
+        <a href="/health">Health Check</a>
+    </footer>
+
+
+    <script>
+        // ── Init ──────────────────────────────────────────
+        const API = window.location.origin;
+        let lastPayload = '';
+
+        // Set default payment_date to today
+        document.getElementById('payment_date').value = new Date().toISOString().split('T')[0];
+
+        // ── Generate QR ───────────────────────────────────
+        document.getElementById('generate-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-generate');
+            const resultDiv = document.getElementById('qr-result');
+            const errorDiv = document.getElementById('generate-error');
+
+            btn.classList.add('loading');
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+
+            const body = {
+                invoice_no: parseInt(document.getElementById('invoice_no').value),
+                amount: parseFloat(document.getElementById('amount').value),
+                payment_mode: document.getElementById('payment_mode').value,
+                ref_no: document.getElementById('ref_no').value,
+                code: parseInt(document.getElementById('code').value),
+                payment_date: document.getElementById('payment_date').value,
+            };
+
+            try {
+                const res = await fetch(`${API}/payment/generate-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'QR generation failed');
+                }
+
+                const data = await res.json();
+                lastPayload = data.encoded_payload;
+
+                document.getElementById('qr-img').src = data.qr_data_url;
+                document.getElementById('qr-payload').textContent = JSON.stringify(JSON.parse(data.encoded_payload), null, 2);
+                resultDiv.style.display = 'block';
+
+            } catch (err) {
+                errorDiv.innerHTML = `<div class="alert alert-error">⚠ ${err.message}</div>`;
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.classList.remove('loading');
+            }
+        });
+
+        // ── Decode QR ─────────────────────────────────────
+        document.getElementById('decode-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-decode');
+            const resultDiv = document.getElementById('decode-result');
+            const errorDiv = document.getElementById('decode-error');
+
+            btn.classList.add('loading');
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+
+            const qr_data = document.getElementById('qr_data').value.trim();
+            if (!qr_data) {
+                errorDiv.innerHTML = `<div class="alert alert-error">⚠ Please paste QR data first</div>`;
+                errorDiv.style.display = 'block';
+                btn.classList.remove('loading');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/payment/decode-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ qr_data: qr_data }),
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Decode failed');
+                }
+
+                const data = await res.json();
+                const payment = data.payment;
+
+                // Build decode fields
+                const container = document.getElementById('decode-fields');
+                container.innerHTML = '';
+
+                const fieldMap = {
+                    'invoice_no': 'Invoice No',
+                    'amount': 'Amount ($)',
+                    'payment_mode': 'Payment Mode',
+                    'ref_no': 'Reference No',
+                    'code': 'Code',
+                    'payment_date': 'Payment Date',
+                    'payment_id': 'Payment ID',
+                };
+
+                for (const [key, label] of Object.entries(fieldMap)) {
+                    if (payment[key] !== undefined && payment[key] !== null) {
+                        const div = document.createElement('div');
+                        div.className = 'decode-field';
+                        div.innerHTML = `
+                            <div class="df-label">${label}</div>
+                            <div class="df-value">${payment[key]}</div>
+                        `;
+                        container.appendChild(div);
+                    }
+                }
+
+                resultDiv.style.display = 'block';
+
+            } catch (err) {
+                errorDiv.innerHTML = `<div class="alert alert-error">⚠ ${err.message}</div>`;
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.classList.remove('loading');
+            }
+        });
+
+        // ── Helpers ───────────────────────────────────────
+        function pasteFromGenerate() {
+            if (lastPayload) {
+                document.getElementById('qr_data').value = lastPayload;
+            } else {
+                // Put sample data
+                document.getElementById('qr_data').value = JSON.stringify({
+                    invoice_no: 10045,
+                    amount: 49.99,
+                    payment_mode: "QR",
+                    ref_no: "REF-2026-001",
+                    code: 855,
+                    payment_date: new Date().toISOString().split('T')[0]
+                });
+            }
+        }
+
+        function resetGenerateForm() {
+            document.getElementById('generate-form').reset();
+            document.getElementById('payment_date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('invoice_no').value = '10045';
+            document.getElementById('amount').value = '49.99';
+            document.getElementById('code').value = '855';
+            document.getElementById('ref_no').value = 'REF-2026-001';
+            document.getElementById('qr-result').style.display = 'none';
+            document.getElementById('generate-error').style.display = 'none';
+        }
+
+        function resetDecodeForm() {
+            document.getElementById('qr_data').value = '';
+            document.getElementById('decode-result').style.display = 'none';
+            document.getElementById('decode-error').style.display = 'none';
+        }
+
+        function downloadQR() {
+            const img = document.getElementById('qr-img');
+            const a = document.createElement('a');
+            a.href = img.src;
+            a.download = `payment_qr_${document.getElementById('invoice_no').value}.png`;
+            a.click();
+        }
+    </script>
+
+</body>
+</html>

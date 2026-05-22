@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-khqr = KHQR(os.getenv("BAKONG_TOKEN"))
+khqr = KHQR(os.getenv("BAKONG_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoiZTFhMjA5NmUxZWE2NGMzYiJ9LCJpYXQiOjE3Nzk0NjM2MjYsImV4cCI6MTc4NzIzOTYyNn0.yYeUa6uKax99mSiKBCwjpxR75S9KVqLk76A_KH_Cd8A"))
 
 
 def generate_qr(
@@ -28,17 +28,17 @@ def generate_qr(
         EMVCo-compliant QR code string
     """
     qr_string = khqr.create_qr(
-        bank_account=os.getenv("BAKONG_ACCOUNT_ID"),
-        merchant_name=os.getenv("BAKONG_MERCHANT_NAME"),
-        merchant_city=os.getenv("BAKONG_MERCHANT_CITY"),
+        bank_account=os.getenv("BAKONG_ACCOUNT", "mao_tityamony@bkrt"),
+        merchant_name=os.getenv("MERCHANT_NAME", "Ecomerc shop"),
+        merchant_city=os.getenv("MERCHANT_CITY", "Phnom Penh"),
         amount=amount,
         currency=currency,
         store_label=store_label,
         phone_number=phone_number,
         bill_number=bill_number,
         terminal_label="POS-01",
-        static=False,       # Dynamic QR (unique per transaction)
-        expiration=1         # Expires in 1 day
+        static=True     # Dynamic QR (unique per transaction)
+        
     )
     return qr_string
 

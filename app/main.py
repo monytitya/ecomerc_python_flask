@@ -1,12 +1,16 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
 import shutil
 import uuid
 import hashlib
+import json
+import io
+import base64
+from datetime import date
 from .db.session import engine, get_db, Base
 from .models import models
 from .schemas import schemas
@@ -1399,3 +1403,117 @@ def bakong_payment_details(data: schemas.BakongCheckPaymentRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to get payment details: {str(e)}")
 
+
+# ==================== 20. Payment QR Code — Generate & Scan ====================
+#
+#   Flow:
+#     1. POST /payment/generate-qr       → returns QR as base64 PNG + payload
+#     2. POST /payment/generate-qr/image → returns QR as raw PNG stream
+#     3. POST /payment/decode-qr         → parses a scanned QR JSON string
+#
+
+@app.post("/payment/generate-qr", tags=["Payment QR"])
+def payment_generate_qr(payment: schemas.PaymentQRRequest):
+    """
+    Generate a QR code image (PNG base64) from payment data.
+    The QR encodes a JSON string with all payment fields.
+    """
+    import qrcode as qrcode_lib
+
+    payload = payment.model_dump()
+    qr_content = json.dumps(payload, ensure_ascii=False)
+
+    qr = qrcode_lib.QRCode(
+        version=None,
+        error_correction=qrcode_lib.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_content)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    img_base64 = base64.b64encode(buffer.read()).decode("utf-8")
+
+    return {
+        "success": True,
+        "invoice_no": payment.invoice_no,
+        "qr_base64": img_base64,
+        "qr_data_url": f"data:image/png;base64,{img_base64}",
+        "encoded_payload": qr_content,
+    }
+
+
+@app.post("/payment/generate-qr/image", tags=["Payment QR"])
+def payment_generate_qr_image(payment: schemas.PaymentQRRequest):
+    """
+    Returns the QR code as a raw PNG image (for direct <img src> or download).
+    """
+    import qrcode as qrcode_lib
+
+    payload = payment.model_dump()
+    qr_content = json.dumps(payload, ensure_ascii=False)
+
+    qr = qrcode_lib.QRCode(
+        version=None,
+        error_correction=qrcode_lib.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_content)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="image/png",
+        headers={"Content-Disposition": f"inline; filename=qr_{payment.invoice_no}.png"},
+    )
+
+
+@app.post("/payment/decode-qr", tags=["Payment QR"])
+def payment_decode_qr(request: schemas.QRDecodeRequest):
+    """
+    Parse the raw string decoded from a QR scan into payment fields.
+    The frontend scans the QR and sends the decoded text here.
+    """
+    try:
+        payment_data = json.loads(request.qr_data)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="QR data is not valid JSON")
+
+    required = {"invoice_no", "amount", "payment_mode", "ref_no", "code", "payment_date"}
+    missing = required - payment_data.keys()
+    if missing:
+        raise HTTPException(status_code=422, detail=f"Missing fields in QR: {missing}")
+
+    return {
+        "success": True,
+        "message": "QR decoded successfully",
+        "payment": payment_data,
+    }
+
+
+# ── Demo UI ────────────────────────────────────────────────────────────────
+
+@app.get("/payment/demo", response_class=HTMLResponse, tags=["Payment QR"])
+def payment_qr_demo_ui():
+    """Serve the Payment QR demo page with generate + scan UI."""
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "payment_qr.html")
+    if not os.path.isfile(template_path):
+        raise HTTPException(status_code=404, detail="Demo template not found")
+    with open(template_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/health", tags=["System"])
+def health():
+    return {"status": "ok", "date": str(date.today())}
