@@ -1098,7 +1098,8 @@ def bakong_checkout(data: schemas.BakongCheckoutRequest, db: Session = Depends(g
             phone_number=data.phone_number
         )
 
-        md5 = hashlib.md5(qr_string.encode()).hexdigest()
+        from .services.bakong_service import khqr
+        md5 = khqr.generate_md5(qr_string)
 
         deeplink = generate_deeplink(
             qr_string,
@@ -1183,7 +1184,8 @@ def bakong_check_status(data: schemas.BakongCheckStatusRequest, db: Session = De
         }
 
     try:
-        result = check_payment_status(data.md5)
+        from .services.bakong_service import get_payment_info
+        result = get_payment_info(data.md5)
         is_paid = result is not None
 
         if is_paid:
@@ -1292,7 +1294,8 @@ def bakong_generate_payment(data: schemas.BakongPaymentRequest):
             store_label=data.store_label,
             phone_number=data.phone_number
         )
-        md5 = hashlib.md5(qr_string.encode()).hexdigest()
+        from .services.bakong_service import khqr
+        md5 = khqr.generate_md5(qr_string)
         deeplink = generate_deeplink(qr_string)
 
         return {
@@ -1315,7 +1318,8 @@ def bakong_check_payment(data: schemas.BakongCheckPaymentRequest):
     Use `/bakong/check-status` for the full checkout flow instead.
     """
     try:
-        result = check_payment_status(data.md5)
+        from .services.bakong_service import get_payment_info
+        result = get_payment_info(data.md5)
         is_paid = result is not None
         return {
             "md5": data.md5,

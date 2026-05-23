@@ -4,10 +4,7 @@ from app.db.session import SQLALCHEMY_DATABASE_URL
 import os
 
 def run_sql_file(filename):
-    # Parse the URL to get connection details
-    # e.g. mysql+pymysql://root:pass@localhost:3306/ecom_store
-    
-    # 1. Create database if not exists
+
     url_parts = SQLALCHEMY_DATABASE_URL.rsplit('/', 1)
     base_url = url_parts[0]
     db_name = url_parts[1]
@@ -22,16 +19,13 @@ def run_sql_file(filename):
         print(f"Failed to connect to MySQL server: {e}")
         return False
 
-    # 2. Execute SQL file
     try:
         engine = create_engine(SQLALCHEMY_DATABASE_URL)
         with engine.connect() as conn:
             with open(filename, 'r', encoding='utf-8') as f:
-                # Split by semicolon, but be careful with triggers/procedures
-                # For this specific SQL, simple split is okay
+                
                 sql_content = f.read()
                 
-                # Remove comments
                 commands = []
                 current_command = []
                 for line in sql_content.split('\n'):
@@ -49,7 +43,6 @@ def run_sql_file(filename):
                     try:
                         conn.execution_options(isolation_level="AUTOCOMMIT").execute(text(cmd))
                     except Exception as ex:
-                        # Ignore "already exists" errors or similar if needed
                         if "already exists" not in str(ex).lower():
                             print(f"Warning on command: {str(ex)[:100]}...")
             

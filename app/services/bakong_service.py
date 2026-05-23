@@ -28,22 +28,18 @@ def generate_qr(
         EMVCo-compliant QR code string
     """
     qr_string = khqr.create_qr(
-        bank_account=os.getenv("BAKONG_ACCOUNT", "mao_tityamony@bkrt"),
-        merchant_name=os.getenv("MERCHANT_NAME", "Ecomerc shop"),
-        merchant_city=os.getenv("MERCHANT_CITY", "Phnom Penh"),
+        bank_account=os.getenv("BAKONG_ACCOUNT_ID", "mao_tityamony@bkrt"),
+        merchant_name=os.getenv("BAKONG_MERCHANT_NAME", "Ecomerc shop"),
+        merchant_city=os.getenv("BAKONG_MERCHANT_CITY", "Phnom Penh"),
         amount=amount,
         currency=currency,
-        store_label=store_label,
-        phone_number=phone_number,
-        bill_number=bill_number,
-        terminal_label="POS-01",
-        static=True     # Dynamic QR (unique per transaction)
+        static=False     # Dynamic QR (unique per transaction)
         
     )
     return qr_string
 
 
-def generate_deeplink(qr_string: str, callback_url: str = "https://bakong-deeplink.nbc.gov.kh/bakong/GGohjnA7BxI95v5zi") -> str:
+def generate_deeplink(qr_string: str, callback_url: str = "https://api-bakong.nbc.gov.kh/") -> str:
     """
     Generate a Bakong mobile app deeplink from a QR string.
     
