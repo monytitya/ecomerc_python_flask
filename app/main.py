@@ -29,7 +29,7 @@ except Exception as e:
     print(f"Warning: Could not create tables on startup: {e}")
     print("Ensure your MySQL credentials in .env are correct.")
 
-app = FastAPI(title="Ecomerc API - Pure Swagger-UI Testing Suite")
+app = FastAPI(title="Ecomerc API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,15 +39,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Upload directory configuration for FastAPI StaticFiles
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Mount uploads folder to serve images directly under /uploads/filename
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-
-# ---- Helper: save an uploaded file and return the stored filename ----
 def _save_upload(file: UploadFile) -> str:
     """Save an UploadFile to UPLOAD_DIR with a unique prefix and return the filename."""
     ext = os.path.splitext(file.filename)[1] if file.filename else ""
@@ -62,11 +58,10 @@ def _save_upload(file: UploadFile) -> str:
 def read_root():
     return {
         "message": "Welcome to Ecomerc API",
-        "documentation": "/docs"
+        "documentation": "/swagger-ui"
     }
 
 
-# ==================== Image Management ====================
 @app.post("/upload", tags=["Image Upload"])
 def upload_file(file: UploadFile = File(...)):
     saved = _save_upload(file)
@@ -91,7 +86,7 @@ def delete_uploaded_image(filename: str):
     os.remove(path)
     return {"message": f"'{filename}' deleted successfully"}
 
-# ==================== 1. AboutUs CRUD ====================
+
 @app.get("/about_us", response_model=List[schemas.AboutUs], tags=["AboutUs"])
 def get_about_us(db: Session = Depends(get_db)):
     return db.query(models.AboutUs).all()
@@ -132,7 +127,6 @@ def delete_about_us(about_id: int, db: Session = Depends(get_db)):
     return {"message": "AboutUs deleted successfully"}
 
 
-# ==================== 2. Admin CRUD (with Image Upload) ====================
 @app.get("/admins", response_model=List[schemas.Admin], tags=["Admin"])
 def get_admins(db: Session = Depends(get_db)):
     return db.query(models.Admin).all()
@@ -208,7 +202,6 @@ def delete_admin(admin_id: int, db: Session = Depends(get_db)):
     db_admin = db.query(models.Admin).filter(models.Admin.admin_id == admin_id).first()
     if not db_admin:
         raise HTTPException(status_code=404, detail="Admin not found")
-    # Also delete the image file if it exists
     img_path = os.path.join(UPLOAD_DIR, db_admin.admin_image) if db_admin.admin_image else None
     db.delete(db_admin)
     db.commit()
@@ -217,7 +210,6 @@ def delete_admin(admin_id: int, db: Session = Depends(get_db)):
     return {"message": "Admin deleted successfully"}
 
 
-# ==================== 3. BundleProductRelation CRUD ====================
 @app.get("/bundle_product_relations", response_model=List[schemas.BundleProductRelation], tags=["BundleProductRelation"])
 def get_bundle_product_relations(db: Session = Depends(get_db)):
     return db.query(models.BundleProductRelation).all()
@@ -258,7 +250,6 @@ def delete_bundle_product_relation(rel_id: int, db: Session = Depends(get_db)):
     return {"message": "Relation deleted successfully"}
 
 
-# ==================== 4. Cart CRUD ====================
 @app.get("/cart", response_model=List[schemas.Cart], tags=["Cart"])
 def get_cart_items(db: Session = Depends(get_db)):
     return db.query(models.Cart).all()
@@ -306,7 +297,6 @@ def delete_cart_item(p_id: int, db: Session = Depends(get_db)):
     return {"message": "Cart item deleted successfully"}
 
 
-# ==================== 5. Category CRUD ====================
 @app.get("/categories", response_model=List[schemas.Category], tags=["Category"])
 def get_categories(db: Session = Depends(get_db)):
     return db.query(models.Category).all()
@@ -365,7 +355,6 @@ def delete_category(cat_id: int, db: Session = Depends(get_db)):
     return {"message": "Category deleted successfully"}
 
 
-# ==================== 6. ContactUs CRUD ====================
 @app.get("/contact_us", response_model=List[schemas.ContactUs], tags=["ContactUs"])
 def get_contact_messages(db: Session = Depends(get_db)):
     return db.query(models.ContactUs).all()
@@ -406,7 +395,6 @@ def delete_contact_message(contact_id: int, db: Session = Depends(get_db)):
     return {"message": "Contact entry deleted successfully"}
 
 
-# ==================== 7. Coupon CRUD ====================
 @app.get("/coupons", response_model=List[schemas.Coupon], tags=["Coupon"])
 def get_coupons(db: Session = Depends(get_db)):
     return db.query(models.Coupon).all()
@@ -447,7 +435,6 @@ def delete_coupon(coupon_id: int, db: Session = Depends(get_db)):
     return {"message": "Coupon deleted successfully"}
 
 
-# ==================== 8. Customer CRUD (with Image Upload) ====================
 @app.get("/customers", response_model=List[schemas.Customer], tags=["Customer"])
 def get_customers(db: Session = Depends(get_db)):
     return db.query(models.Customer).all()
@@ -544,7 +531,6 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
     return {"message": "Customer deleted successfully"}
 
 
-# ==================== 9. CustomerOrder CRUD ====================
 @app.get("/orders", response_model=List[schemas.Order], tags=["CustomerOrder"])
 def get_orders(db: Session = Depends(get_db)):
     return db.query(models.CustomerOrder).all()
@@ -589,7 +575,6 @@ def delete_order(order_id: int, db: Session = Depends(get_db)):
     return {"message": "Order deleted successfully"}
 
 
-# ==================== 10. EnquiryType CRUD ====================
 @app.get("/enquiry_types", response_model=List[schemas.EnquiryType], tags=["EnquiryType"])
 def get_enquiry_types(db: Session = Depends(get_db)):
     return db.query(models.EnquiryType).all()
@@ -630,7 +615,6 @@ def delete_enquiry_type(enquiry_id: int, db: Session = Depends(get_db)):
     return {"message": "EnquiryType deleted successfully"}
 
 
-# ==================== 11. Manufacturer CRUD ====================
 @app.get("/manufacturers", response_model=List[schemas.Manufacturer], tags=["Manufacturer"])
 def get_manufacturers(db: Session = Depends(get_db)):
     return db.query(models.Manufacturer).all()
@@ -689,7 +673,6 @@ def delete_manufacturer(manufacturer_id: int, db: Session = Depends(get_db)):
     return {"message": "Manufacturer deleted successfully"}
 
 
-# ==================== 12. Payment CRUD ====================
 @app.get("/payments", response_model=List[schemas.Payment], tags=["Payment"])
 def get_payments(db: Session = Depends(get_db)):
     return db.query(models.Payment).all()
@@ -730,7 +713,6 @@ def delete_payment(payment_id: int, db: Session = Depends(get_db)):
     return {"message": "Payment deleted successfully"}
 
 
-# ==================== 13. PendingOrder CRUD ====================
 @app.get("/pending_orders", response_model=List[schemas.PendingOrder], tags=["PendingOrder"])
 def get_pending_orders(db: Session = Depends(get_db)):
     return db.query(models.PendingOrder).all()
@@ -771,7 +753,6 @@ def delete_pending_order(order_id: int, db: Session = Depends(get_db)):
     return {"message": "Pending order deleted successfully"}
 
 
-# ==================== 14. Product CRUD ====================
 @app.get("/products", response_model=List[schemas.Product], tags=["Product"])
 def get_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(models.Product).offset(skip).limit(limit).all()
@@ -879,7 +860,6 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     return {"message": "Product deleted successfully"}
 
 
-# ==================== 15. ProductCategory CRUD ====================
 @app.get("/product_categories", response_model=List[schemas.ProductCategory], tags=["ProductCategory"])
 def get_product_categories(db: Session = Depends(get_db)):
     return db.query(models.ProductCategory).all()
@@ -934,7 +914,6 @@ def delete_product_category(p_cat_id: int, db: Session = Depends(get_db)):
     return {"message": "ProductCategory deleted successfully"}
 
 
-# ==================== 16. Store CRUD ====================
 @app.get("/store", response_model=List[schemas.Store], tags=["Store"])
 def get_stores(db: Session = Depends(get_db)):
     return db.query(models.Store).all()
@@ -999,7 +978,6 @@ def delete_store(store_id: int, db: Session = Depends(get_db)):
     return {"message": "Store deleted successfully"}
 
 
-# ==================== 17. Term CRUD ====================
 @app.get("/terms", response_model=List[schemas.Term], tags=["Term"])
 def get_terms(db: Session = Depends(get_db)):
     return db.query(models.Term).all()
@@ -1040,7 +1018,6 @@ def delete_term(term_id: int, db: Session = Depends(get_db)):
     return {"message": "Term deleted successfully"}
 
 
-# ==================== 18. Wishlist CRUD ====================
 @app.get("/wishlist", response_model=List[schemas.Wishlist], tags=["Wishlist"])
 def get_wishlist_items(db: Session = Depends(get_db)):
     return db.query(models.Wishlist).all()
@@ -1080,22 +1057,6 @@ def delete_wishlist_item(wishlist_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Wishlist item deleted successfully"}
 
-# ==================== 19. Bakong Payment Gateway (KHQR) — Full Checkout Flow ====================
-#
-#   Customer Checkout
-#         ↓
-#   POST /bakong/checkout      → Creates Order + Returns QR + MD5 + Deeplink
-#         ↓
-#   Customer Scans QR (Bakong App / ABA / ACLEDA...)
-#         ↓
-#   POST /bakong/check-status  → Frontend polls every ~5s with MD5
-#         ↓
-#   is_paid = true             → Auto-update order_status = "Processing"
-#
-
-
-# ── STEP 1: CHECKOUT (Create Order + Generate QR) ────────────────────────────
-
 @app.post("/bakong/checkout", response_model=schemas.BakongCheckoutResponse, tags=["Bakong Payment"])
 def bakong_checkout(data: schemas.BakongCheckoutRequest, db: Session = Depends(get_db)):
     """
@@ -1116,7 +1077,6 @@ def bakong_checkout(data: schemas.BakongCheckoutRequest, db: Session = Depends(g
     Returns order details + QR string + MD5 hash (for polling) + deeplink.
     """
     try:
-        # 1. Create the customer order with "Pending Payment" status
         new_order = models.CustomerOrder(
             customer_id=data.customer_id,
             due_amount=data.amount,
@@ -1129,7 +1089,6 @@ def bakong_checkout(data: schemas.BakongCheckoutRequest, db: Session = Depends(g
         db.commit()
         db.refresh(new_order)
 
-        # 2. Generate Bakong KHQR QR code
         bill_number = f"ORD-{new_order.order_id}-INV-{data.invoice_no}"
         qr_string = generate_qr(
             amount=data.amount,
@@ -1139,16 +1098,12 @@ def bakong_checkout(data: schemas.BakongCheckoutRequest, db: Session = Depends(g
             phone_number=data.phone_number
         )
 
-        # 3. Generate MD5 from QR string (used to poll payment status)
         md5 = hashlib.md5(qr_string.encode()).hexdigest()
 
-        # 4. Generate deeplink for Bakong mobile app
         deeplink = generate_deeplink(
             qr_string,
             callback_url=f"https://yourshop.com/payment/success?order_id={new_order.order_id}"
         )
-
-        # 5. Save the Bakong transaction record
         bakong_txn = models.BakongTransaction(
             order_id=new_order.order_id,
             customer_id=data.customer_id,
@@ -1178,9 +1133,6 @@ def bakong_checkout(data: schemas.BakongCheckoutRequest, db: Session = Depends(g
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Checkout failed: {str(e)}")
 
-
-# ── STEP 2: CHECK PAYMENT STATUS (Poll every 5s) ────────────────────────────
-
 @app.post("/bakong/check-status", response_model=schemas.BakongCheckStatusResponse, tags=["Bakong Payment"])
 def bakong_check_status(data: schemas.BakongCheckStatusRequest, db: Session = Depends(get_db)):
     """
@@ -1208,7 +1160,6 @@ def bakong_check_status(data: schemas.BakongCheckStatusRequest, db: Session = De
     }
     ```
     """
-    # Find the Bakong transaction by MD5
     bakong_txn = db.query(models.BakongTransaction).filter(
         models.BakongTransaction.md5 == data.md5
     ).first()
@@ -1216,7 +1167,6 @@ def bakong_check_status(data: schemas.BakongCheckStatusRequest, db: Session = De
     if not bakong_txn:
         raise HTTPException(status_code=404, detail="Transaction not found for this MD5")
 
-    # If already paid, return cached result without calling Bakong again
     if bakong_txn.payment_status == "PAID":
         return {
             "md5": data.md5,
@@ -1233,13 +1183,11 @@ def bakong_check_status(data: schemas.BakongCheckStatusRequest, db: Session = De
         }
 
     try:
-        # Poll Bakong API for payment status
         result = check_payment_status(data.md5)
         is_paid = result is not None
 
         if is_paid:
-            # ── PAYMENT CONFIRMED ──────────────────────────────
-            # Parse Bakong response fields
+       
             bakong_hash = None
             from_account = None
             to_account = None
@@ -1254,14 +1202,12 @@ def bakong_check_status(data: schemas.BakongCheckStatusRequest, db: Session = De
                     from datetime import datetime as dt
                     acknowledged_at = dt.fromtimestamp(ack_ms / 1000)
 
-            # Update Bakong transaction → PAID
             bakong_txn.payment_status = "PAID"
             bakong_txn.bakong_hash = bakong_hash
             bakong_txn.from_account = from_account
             bakong_txn.to_account = to_account
             bakong_txn.acknowledged_at = acknowledged_at
 
-            # Update customer order → Processing
             order = db.query(models.CustomerOrder).filter(
                 models.CustomerOrder.order_id == bakong_txn.order_id
             ).first()
@@ -1284,7 +1230,6 @@ def bakong_check_status(data: schemas.BakongCheckStatusRequest, db: Session = De
                 "description": f"Order #{bakong_txn.order_id}"
             }
         else:
-            # Payment not yet received
             return {
                 "md5": data.md5,
                 "is_paid": False,
@@ -1297,7 +1242,6 @@ def bakong_check_status(data: schemas.BakongCheckStatusRequest, db: Session = De
         raise HTTPException(status_code=400, detail=f"Payment status check failed: {str(e)}")
 
 
-# ── GET TRANSACTION BY ORDER ID ───────────────────────────────────────────────
 
 @app.get("/bakong/transaction/{order_id}", response_model=schemas.BakongTransactionSchema, tags=["Bakong Payment"])
 def bakong_get_transaction(order_id: int, db: Session = Depends(get_db)):
@@ -1313,7 +1257,6 @@ def bakong_get_transaction(order_id: int, db: Session = Depends(get_db)):
     return txn
 
 
-# ── LIST ALL TRANSACTIONS ─────────────────────────────────────────────────────
 
 @app.get("/bakong/transactions", response_model=List[schemas.BakongTransactionSchema], tags=["Bakong Payment"])
 def bakong_list_transactions(
@@ -1334,7 +1277,6 @@ def bakong_list_transactions(
     return query.order_by(models.BakongTransaction.created_at.desc()).offset(skip).limit(limit).all()
 
 
-# ── STANDALONE: Generate QR (no order) ────────────────────────────────────────
 
 @app.post("/bakong/generate", response_model=schemas.BakongPaymentResponse, tags=["Bakong Payment"])
 def bakong_generate_payment(data: schemas.BakongPaymentRequest):
@@ -1365,7 +1307,6 @@ def bakong_generate_payment(data: schemas.BakongPaymentRequest):
         raise HTTPException(status_code=400, detail=f"QR generation failed: {str(e)}")
 
 
-# ── STANDALONE: Check Payment ─────────────────────────────────────────────────
 
 @app.post("/bakong/check", tags=["Bakong Payment"])
 def bakong_check_payment(data: schemas.BakongCheckPaymentRequest):
@@ -1385,9 +1326,6 @@ def bakong_check_payment(data: schemas.BakongCheckPaymentRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Payment check failed: {str(e)}")
 
-
-# ── STANDALONE: Get Payment Details ───────────────────────────────────────────
-
 @app.post("/bakong/details", tags=["Bakong Payment"])
 def bakong_payment_details(data: schemas.BakongCheckPaymentRequest):
     """
@@ -1404,24 +1342,21 @@ def bakong_payment_details(data: schemas.BakongCheckPaymentRequest):
         raise HTTPException(status_code=400, detail=f"Failed to get payment details: {str(e)}")
 
 
-# ==================== 20. Payment QR Code — Generate & Scan ====================
-#
-#   Flow:
-#     1. POST /payment/generate-qr       → returns QR as base64 PNG + payload
-#     2. POST /payment/generate-qr/image → returns QR as raw PNG stream
-#     3. POST /payment/decode-qr         → parses a scanned QR JSON string
-#
 
 @app.post("/payment/generate-qr", tags=["Payment QR"])
 def payment_generate_qr(payment: schemas.PaymentQRRequest):
     """
-    Generate a QR code image (PNG base64) from payment data.
-    The QR encodes a JSON string with all payment fields.
+    Generate a valid Bakong KHQR code image (PNG base64) from payment data.
     """
     import qrcode as qrcode_lib
 
-    payload = payment.model_dump()
-    qr_content = json.dumps(payload, ensure_ascii=False)
+    qr_content = generate_qr(
+        amount=payment.amount,
+        currency="USD",
+        bill_number=f"INV-{payment.invoice_no}",
+        store_label="Ecomerc Shop",
+        phone_number="85512345678"
+    )
 
     qr = qrcode_lib.QRCode(
         version=None,
@@ -1451,12 +1386,17 @@ def payment_generate_qr(payment: schemas.PaymentQRRequest):
 @app.post("/payment/generate-qr/image", tags=["Payment QR"])
 def payment_generate_qr_image(payment: schemas.PaymentQRRequest):
     """
-    Returns the QR code as a raw PNG image (for direct <img src> or download).
+    Returns the valid Bakong KHQR code as a raw PNG image (for direct <img src> or download).
     """
     import qrcode as qrcode_lib
 
-    payload = payment.model_dump()
-    qr_content = json.dumps(payload, ensure_ascii=False)
+    qr_content = generate_qr(
+        amount=payment.amount,
+        currency="USD",
+        bill_number=f"INV-{payment.invoice_no}",
+        store_label="Ecomerc Shop",
+        phone_number="85512345678"
+    )
 
     qr = qrcode_lib.QRCode(
         version=None,
@@ -1502,7 +1442,6 @@ def payment_decode_qr(request: schemas.QRDecodeRequest):
     }
 
 
-# ── Demo UI ────────────────────────────────────────────────────────────────
 
 @app.get("/payment/demo", response_class=HTMLResponse, tags=["Payment QR"])
 def payment_qr_demo_ui():

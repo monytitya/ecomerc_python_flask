@@ -43,7 +43,7 @@ def generate_qr(
     return qr_string
 
 
-def generate_deeplink(qr_string: str, callback_url: str = "https://yourshop.com/payment/success") -> str:
+def generate_deeplink(qr_string: str, callback_url: str = "https://bakong-deeplink.nbc.gov.kh/bakong/GGohjnA7BxI95v5zi") -> str:
     """
     Generate a Bakong mobile app deeplink from a QR string.
     
