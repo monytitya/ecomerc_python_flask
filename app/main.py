@@ -1374,7 +1374,7 @@ def payment_generate_qr(payment: schemas.PaymentQRRequest):
     img = qr.make_image(fill_color="black", back_color="white")
 
     buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
+    img.save(buffer)
     buffer.seek(0)
     img_base64 = base64.b64encode(buffer.read()).decode("utf-8")
 
@@ -1413,7 +1413,7 @@ def payment_generate_qr_image(payment: schemas.PaymentQRRequest):
 
     img = qr.make_image(fill_color="black", back_color="white")
     buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
+    img.save(buffer)
     buffer.seek(0)
 
     return StreamingResponse(
