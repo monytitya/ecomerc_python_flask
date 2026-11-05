@@ -1,4 +1,5 @@
 .env
+.env.docker
 .vscode
 .venv
 .__pychache__

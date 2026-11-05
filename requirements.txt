@@ -3,6 +3,7 @@ uvicorn
 flask
 sqlalchemy
 pymysql
+psycopg[binary]>=3.2,<4
 cryptography
 pydantic
 pydantic-settings

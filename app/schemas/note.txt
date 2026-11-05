@@ -1,0 +1,21 @@
+# Run these commands in Git Bash from the project root.
+# This machine currently has Python 3.14 installed; it does not have 3.13.
+py -0p
+
+# Create and activate a virtual environment using the installed Python.
+py -3.14 -m venv .venv
+source .venv/Scripts/activate
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+# Check SQLAlchemy before starting the server.
+python -c "import sqlalchemy; print(sqlalchemy.__version__)"
+
+# Only continue if the import succeeds.
+python run.py
+
+# If the import reports that Windows Application Control blocked
+# sqlalchemy's _result_cy extension, stop and ask your IT administrator
+# to approve the installed package/environment. Recreating the venv or
+# switching to Python 3.13 is not a fix for that policy block.

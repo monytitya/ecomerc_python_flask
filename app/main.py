@@ -22,12 +22,8 @@ from .services.bakong_service import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 
-try:
-    models.Base.metadata.create_all(bind=engine)
-    print("Database tables synchronized.")
-except Exception as e:
-    print(f"Warning: Could not create tables on startup: {e}")
-    print("Ensure your MySQL credentials in .env are correct.")
+models.Base.metadata.create_all(bind=engine)
+print("Database tables synchronized.")
 
 app = FastAPI(title="Ecomerc API")
 
@@ -58,7 +54,7 @@ def _save_upload(file: UploadFile) -> str:
 def read_root():
     return {
         "message": "Welcome to Ecomerc API",
-        "documentation": "/swagger-ui"
+        "documentation": "/docs"
     }
 
 
