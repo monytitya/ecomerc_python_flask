@@ -221,16 +221,18 @@ class ProductCreate(ProductBase):
     product_keywords: str
     product_label: str
 
-class Product(ProductBase):
+class Product(BaseModel):
     product_id: int
     p_cat_id: int
-    date: datetime
+    cat_id: int
+    manufacturer_id: int
+    date: Optional[datetime] = None
+    product_title: str
     product_img1: str
-    product_img2: str
-    product_img3: str
-    product_video: str
-    product_keywords: str
-    product_label: str
+    product_price: int
+    product_psp_price: int
+    product_desc: str
+    status: str
     class Config(BaseConfig): pass
 
 # ProductCategory
@@ -390,4 +392,3 @@ class PaymentQRRequest(BaseModel):
 class QRDecodeRequest(BaseModel):
     """Raw string decoded from a QR scan (JSON string)."""
     qr_data: str
-

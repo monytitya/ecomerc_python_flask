@@ -128,19 +128,11 @@ class Product(Base):
     manufacturer_id = Column(Integer, nullable=False)
     date = Column(TIMESTAMP, default=datetime.utcnow)
     product_title = Column(Text, nullable=False)
-    product_url = Column(Text, nullable=False)
     product_img1 = Column(Text, nullable=False)
-    product_img2 = Column(Text, nullable=False)
-    product_img3 = Column(Text, nullable=False)
     product_price = Column(Integer, nullable=False)
     product_psp_price = Column(Integer, nullable=False)
     product_desc = Column(Text, nullable=False)
-    product_features = Column(Text, nullable=False)
-    product_video = Column(Text, nullable=False)
-    product_keywords = Column(Text, nullable=False)
-    product_label = Column(Text, nullable=False)
     status = Column(String(255), nullable=False)
-    
     category = relationship("Category", back_populates="products")
 
 class ProductCategory(Base):
